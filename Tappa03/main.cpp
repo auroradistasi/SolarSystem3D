@@ -16,7 +16,7 @@ struct CorpoCeleste{
     float vel_rotazione;      // rad/s di rotazione su se stesso
     float inclinazione_deg;   // inclinazione assiale
     glm::vec3 colore;
-    bool is_sole = false;
+    bool is_sun = false;
     glm::mat4 model(float t) const {
         //scala in base al raggio del corpo
         glm::mat4 scala(
@@ -30,29 +30,29 @@ struct CorpoCeleste{
         float rs = glm::sin(ar);
         float rc = glm::cos(ar);
         glm::mat4 spin(
-             rc,  0.0f,  -rs,  0.0f,   // 1a colonna
-            0.0f, 1.0f, 0.0f, 0.0f,   // 2a colonna
-             rs,  0.0f,   rc,  0.0f,   // 3a colonna
-            0.0f, 0.0f, 0.0f, 1.0f    // 4a colonna
+             rc,  0.0f,  -rs,  0.0f, 
+            0.0f, 1.0f, 0.0f, 0.0f,   
+             rs,  0.0f,   rc,  0.0f,   
+            0.0f, 0.0f, 0.0f, 1.0f    
         );
         //inclinazione asse 
         float ts = glm::sin(glm::radians(inclinazione_deg));
         float tc = glm::cos(glm::radians(inclinazione_deg));
         glm::mat4 tilt(
-              tc,   ts,  0.0f, 0.0f,   // 1a colonna
-             -ts,   tc,  0.0f, 0.0f,   // 2a colonna
-            0.0f, 0.0f, 1.0f, 0.0f,   // 3a colonna
-            0.0f, 0.0f, 0.0f, 1.0f    // 4a colonna
+              tc,   ts,  0.0f, 0.0f,   
+             -ts,   tc,  0.0f, 0.0f,   
+            0.0f, 0.0f, 1.0f, 0.0f,   
+            0.0f, 0.0f, 0.0f, 1.0f    
         );
         //posizione orbita (traslazione)
         float ao = vel_orbita * t;
         float px =  dist_orbita * glm::cos(ao);
         float pz = -dist_orbita * glm::sin(ao);
         glm::mat4 orbita(
-            1.0f, 0.0f, 0.0f, 0.0f,   // 1a colonna
-            0.0f, 1.0f, 0.0f, 0.0f,   // 2a colonna
-            0.0f, 0.0f, 1.0f, 0.0f,   // 3a colonna
-              px, 0.0f,   pz,  1.0f    // 4a colonna: qui vive la traslazione
+            1.0f, 0.0f, 0.0f, 0.0f,  
+            0.0f, 1.0f, 0.0f, 0.0f,   
+            0.0f, 0.0f, 1.0f, 0.0f,   
+              px, 0.0f,   pz,  1.0f   
         );
 
         return orbita * tilt * spin * scala;
@@ -113,8 +113,8 @@ class Scene{
     
     public:
     Scene(){
-        Mesh sole=Mesh::crea_sfera(40, 20, 0.5f );
-        sole.pack4gpu(points, indices);
+        Mesh sfera=Mesh::crea_sfera(40, 20, 0.5f );
+        sfera.pack4gpu(points, indices);
         send_arrays_2a3f();
     }
     ~Scene () { clean (); }
@@ -163,15 +163,72 @@ class Scene{
                      GL_STATIC_DRAW);
     }
 };
+class Orbita{
+    private:
+        static const unsigned int seg=128;
+        GLuint vbo;
+        GLuint vao;
+        std::vector<float> punti;
+    public:
+    Orbita(){
+        crea_cerchio();
+        send_arrays_1a3f();
+    }
+
+    ~Orbita(){ clean(); }
+    void clean(){
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+    }
+
+    void draw(){
+        glBindVertexArray(vao);
+        glDrawArrays(GL_LINE_LOOP, //collega i vertici a catena e chiude l'anello
+            0, //primo vertice
+            seg  //quanti vertici
+        );
+    }
+
+    private:
+    void crea_cerchio(){
+        punti.clear();
+        for (unsigned int i = 0; i < seg; ++i) {
+            float a = 2.0f * (float)M_PI * i / seg; //calcolo angolo per punto i
+            punti.push_back( cosf(a));   // x
+            punti.push_back( 0.0f);      // y è sempre 0
+            punti.push_back(-sinf(a));   // z
+        }
+    }
+
+    void send_arrays_1a3f(){
+        glGenVertexArrays (1, &vao);
+        glBindVertexArray (vao);
+        glGenBuffers (1, &vbo);
+        glBindBuffer (GL_ARRAY_BUFFER, vbo);
+        glBufferData (GL_ARRAY_BUFFER,
+                      punti.size () * sizeof (float),
+                      punti.data (),
+                      GL_STATIC_DRAW);
+        glVertexAttribPointer (0,
+                               3,
+                               GL_FLOAT,
+                               GL_FALSE,
+                               3 * sizeof(float),
+                               (void*)0);
+        glEnableVertexAttribArray (0);
+    }
+};
+
 
 class Camera{
     private:
         float phi_deg = 210.0f;
         float theta_deg = 20.0f;
         // distanza della camera dal centro della scena
-        float distance = 6.0f;
+        float distance = 60.0f;
         // parametro della proiezione
-        float focal_distance = 4.0f;
+        float focal_distance = 2.0f;
+        float aspect = 4.0f / 3.0f;
         GLint vp_loc;
     public:
     Camera(Shaders& shaders){
@@ -190,9 +247,9 @@ class Camera{
 
     void zoom(float dy)
     {
-        focal_distance += dy * 0.05f;
-        if (focal_distance < 0.5f)
-            focal_distance = 0.5f;
+        distance += dy * distance / 100.0f;
+        if (distance < 0.5f)
+            distance = 0.5f;
         update();
     }
 
@@ -226,12 +283,12 @@ class Camera{
                     );
 
         //proiezione
-        const float fcp = 100.0;
-        const float ncp = 1.0;
+        const float fcp = distance + 200.0f;
+        const float ncp = distance * 0.01f;
         float a = -(fcp + ncp) / (fcp - ncp);
         float b = -2.0 * fcp * ncp / (fcp - ncp);
         glm::mat4 projection(
-            focal_distance, 0.0, 0.0, 0.0,
+            focal_distance/aspect, 0.0, 0.0, 0.0,
             0.0, focal_distance, 0.0, 0.0,
             0.0, 0.0, a, -1.0,
             0.0, 0.0, b, 0.0
@@ -248,22 +305,32 @@ class Camera{
         );
 
     }
+    public:
+    void set_aspect(float w, float h){
+        if (h > 0.0f) aspect = w / h;
+        else aspect = 1.0f;
+        update();
+    }
 };
 
 
 int main(){
     Setup setup;
     sf::Window& window = *setup.window;
-    Shaders shaders("../Tappa02/02_vertex.vert",
-                "../Tappa02/02_fragment.frag");
+    Shaders shaders("../Tappa03/03_vertex.vert",
+                "../Tappa03/03_fragment.frag");
     shaders.use();
     GLint objectColorLoc = glGetUniformLocation(shaders.program, "objectColor");
     GLint sunPositionLoc = glGetUniformLocation(shaders.program, "sunPosition");
-    GLint isSunLoc = glGetUniformLocation(shaders.program, "isSun");
+    GLint tipoLoc = glGetUniformLocation(shaders.program, "tipo");
     GLint modelLoc = glGetUniformLocation(shaders.program, "model");
 
     Camera camera(shaders);
+    camera.set_aspect(static_cast<float>(window.getSize().x),
+                      static_cast<float>(window.getSize().y));
     Scene scene;
+    Orbita orbita;
+    glm::vec3 coloreOrbita(0.11f, 0.13f, 0.17f);
     glEnable(GL_DEPTH_TEST);
     
     // la luce parte dall'origine e non si muove mai: una volta sola
@@ -271,9 +338,17 @@ int main(){
     glUniform3fv(sunPositionLoc, 1, &sunPosition[0]);
 
     std::vector<CorpoCeleste> sistema = {
-    // nome    raggio dist  v_orb  v_rot  incl    colore              sole
-    { "Sole",  1.0f,  0.0f, 0.0f,  0.5f,  7.25f, {1.0f, 0.6f, 0.05f}, true }, 
-    };
+    // nome        raggio  dist    v_orb    v_rot   incl      colore            sole
+    { "Sole",      5.00f,   0.0f, 0.000f,  0.30f,   7.25f, {1.00f,0.45f,0.02f}, true  },
+    { "Mercurio",  0.38f,   6.8f, 0.520f,  0.20f,   0.03f, {0.62f,0.58f,0.54f}, false },
+    { "Venere",    0.95f,   8.1f, 0.370f,  0.10f, 177.36f, {0.90f,0.78f,0.50f}, false },
+    { "Terra",     1.00f,   9.0f, 0.310f,  1.57f,  23.44f, {0.20f,0.42f,0.85f}, false },
+    { "Marte",     0.53f,  10.4f, 0.250f,  1.57f,  25.19f, {0.78f,0.33f,0.20f}, false },
+    { "Giove",     3.66f,  15.8f, 0.140f,  2.42f,   3.13f, {0.80f,0.68f,0.52f}, false },
+    { "Saturno",   3.05f,  19.2f, 0.100f,  2.33f,  26.73f, {0.88f,0.80f,0.60f}, false },
+    { "Urano",     1.99f,  24.1f, 0.072f,  1.85f,  97.77f, {0.55f,0.80f,0.83f}, false },
+    { "Nettuno",   1.93f,  27.9f, 0.057f,  1.90f,  28.32f, {0.22f,0.35f,0.75f}, false },
+};
 
     sf::Clock clock;        
     
@@ -290,6 +365,8 @@ int main(){
                     resized->size.x,
                     resized->size.y
                 );
+                camera.set_aspect(static_cast<float>(resized->size.x),
+                                  static_cast<float>(resized->size.y));
             }
             else if(const auto* mouse = event->getIf<sf::Event::MouseMoved>()){
                 static float old_x = mouse->position.x;
@@ -307,11 +384,28 @@ int main(){
         float t = clock.getElapsedTime().asSeconds();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glUniform1i(tipoLoc, 2);
+        glUniform3fv(objectColorLoc, 1, &coloreOrbita[0]);
+
+        for (const CorpoCeleste& corpo : sistema) {
+            if (corpo.dist_orbita <= 0.0f) continue; //il sole senza orbita
+
+            float r = corpo.dist_orbita;
+            glm::mat4 m(
+                r,    0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, r,    0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f
+            );
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &m[0][0]);
+            orbita.draw();
+        }
+
         for (const CorpoCeleste& corpo : sistema) {
             glm::mat4 model = corpo.model(t);
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
             glUniform3fv(objectColorLoc, 1, &corpo.colore[0]);
-            glUniform1i(isSunLoc, corpo.is_sole ? 1 : 0);
+            glUniform1i(tipoLoc, corpo.is_sun ? 1 : 0);
             scene.draw();
         }
         window.display();

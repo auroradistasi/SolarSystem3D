@@ -48,12 +48,12 @@ class Mesh{
         float sectorAngle, stackAngle;
         for(unsigned int i=0; i<=stackCount; i++){
             stackAngle = M_PI / 2 - i * stackStep; // da +90° a -90°, phi nella formula
-            float xy = radius * cosf(stackAngle); // r * cos(u) -> raggio anello
-            float z = radius * sinf(stackAngle); // r * sin(u) -> altezza anello
+            float xz = radius * cosf(stackAngle); // r * cos(u) -> raggio anello
+            float y = radius * sinf(stackAngle); // r * sin(u) -> altezza anello
             for(unsigned int j=0; j<=sectorCount; j++){
                 sectorAngle=j*sectorStep;
-                float x = xy * cosf (sectorAngle); // r * cos(u) * cos(v)
-                float y = xy * sinf (sectorAngle); // r * cos(u) * sin(v)
+                float x = xz * cosf (sectorAngle); // r * cos(u) * cos(v)
+                float z = -xz * sinf (sectorAngle); // r * cos(u) * sin(v)
 
                 vertices.emplace_back (x, y, z);
 

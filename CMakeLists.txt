@@ -41,6 +41,7 @@ find_package(OpenGL REQUIRED)
 # Tappa 01
 SET(fn01 "Tappa01")
 SET(fn02 "Tappa02")
+SET(fn03 "Tappa03")
 
 add_executable(${fn01}
     Tappa01/main.cpp
@@ -48,7 +49,9 @@ add_executable(${fn01}
 add_executable(${fn02}
     Tappa02/main.cpp
 )
-
+add_executable(${fn03}
+    Tappa03/main.cpp
+)
 target_link_libraries(${fn01}
     PRIVATE
     common
@@ -58,6 +61,13 @@ target_link_libraries(${fn01}
 )
 
 target_link_libraries(${fn02}
+    PRIVATE
+    common
+    SFML::Window
+    OpenGL::GL
+    glm::glm
+)
+target_link_libraries(${fn03}
     PRIVATE
     common
     SFML::Window
