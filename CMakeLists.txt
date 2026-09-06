@@ -44,6 +44,7 @@ SET(fn02 "Tappa02")
 SET(fn03 "Tappa03")
 SET(fn04 "Tappa04")
 SET(fn05 "Tappa05")
+SET(fn06 "Tappa06")
 add_executable(${fn01}
     Tappa01/main.cpp
 )
@@ -58,6 +59,9 @@ add_executable(${fn04}
 )
 add_executable(${fn05}
     Tappa05/main.cpp
+)
+add_executable(${fn06}
+    Tappa06/main.cpp
 )
 target_link_libraries(${fn01}
     PRIVATE
@@ -94,4 +98,12 @@ target_link_libraries(${fn05}
     SFML::Window
     OpenGL::GL
     glm::glm
+)
+target_link_libraries(${fn06}
+    PRIVATE
+    common
+    SFML::Window
+    OpenGL::GL
+    glm::glm
+    SFML::Graphics
 )
