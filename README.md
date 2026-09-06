@@ -14,6 +14,7 @@ cd build
 ./tappa04
 ./tappa05
 ./tappa06
+./tappa07
 ```
 Le tappe non richiedono argomenti aggiuntivi da riga di comando. 
 
@@ -29,7 +30,9 @@ Le tappe non richiedono argomenti aggiuntivi da riga di comando.
 | Comando | Azione | Da |
 |---|---|---|
 | `0` | Camera sul Sole, vista panoramica | Tappa04 |
-| `1` … `8` | Camera su un pianeta, da Mercurio a Nettuno | Tappa04 |
+| `1` … `7` | Camera su un pianeta, da Mercurio a Urano | Tappa04 |
+| `8` | Camera su Luna | Tappa07 |
+| `9` | Camera su Nettuno | Tappa07 |
 | `P` | Pausa / riprendi | Tappa04 |
 | `↑` / `↓` | Accelera / rallenta il tempo | Tappa04 |
 | `R` | Velocità del tempo a 1× | Tappa04 |
