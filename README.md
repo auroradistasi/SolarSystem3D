@@ -16,6 +16,8 @@ cd build
 ./tappa06
 ./tappa07
 ./tappa08
+./tappa09
+./tappa10
 ```
 Le tappe non richiedono argomenti aggiuntivi da riga di comando. 
 
